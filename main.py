@@ -25,6 +25,10 @@ def set_parser():
     parser.add_argument("-y", help="second argument")
     parser.add_argument("-z", help="third argument(optional in conversion from BL)")
     parser.add_argument("-r", help="BL/BLH in radians")
+    NEUpArguments = parser.add_argument_group("NEUp arguments")
+    NEUpArguments.add_argument("-a", help="phi argument")
+    NEUpArguments.add_argument("-b", help="lam argument")
+    NEUpArguments.add_argument("-c", help="h argument")
     args = parser.parse_args()
     return args
 
@@ -47,12 +51,15 @@ def check_given_arguments(args, transformator: Transformator):
 
     return True
 
-def check_len(splited_line, entry_format:str):
+def check_len(splited_line, entry_format:str, out_format):
     if entry_format == "BL":
         if len(splited_line) != 2:
             raise ValueError(str(splited_line))
-    if entry_format in ["BLH", "XYZ"]:
+    if entry_format in ["BLH", "XYZ"] and out_format != "NEUp":
         if len(splited_line) != 3:
+            raise ValueError(str(splited_line))
+    if out_format == "NEUp":
+        if len(splited_line) != 6:
             raise ValueError(str(splited_line))
 
 def convert_data_from_file(args, transformator: Transformator, entry_format: str, out_format: str):
@@ -64,15 +71,19 @@ def convert_data_from_file(args, transformator: Transformator, entry_format: str
             lines = f.readlines()
             for line in lines:
                 splited_line = line.split(',')
-                check_len(splited_line, entry_format)
+                check_len(splited_line, entry_format, out_format)
                 splited_line[-1] = splited_line[-1].replace("\n", "")
                 if entry_format == "BL":
                     if args.model != "grs80": raise ValueError("BL uses only grs80 model")
                     x, y = float(splited_line[0]), float(splited_line[1])
                     result = operation_func(x, y, 0, args.r)
                 elif entry_format in ["XYZ", "BLH"]:
-                    x, y, z = float(splited_line[0]), float(splited_line[1]), float(splited_line[2])
-                    result = operation_func(x, y, z, args.r)
+                    if out_format == "NEUp":
+                        arguments = [float(splited_line[i]) for i in range(0, 6)]
+                        result = operation_func(arguments)
+                    else:
+                        x, y, z = float(splited_line[0]), float(splited_line[1]), float(splited_line[2])
+                        result = operation_func(x, y, z, args.r)
                 output_lines.append(result)
             f.close()
             output_lines.reverse()
@@ -100,10 +111,17 @@ def convert_single_line(args, entry_format, out_format, trans=Transformator):
             x, y, z = float(args.x), float(args.y), float(args.z)
         elif entry_format == "BL":
             x, y, z = float(args.x), float(args.y), 0
+        if entry_format in ["BLH", "BL"]:
+            if x < 0 or y < 0: raise ValueError("phi or lam are negative")
     except:
         raise ValueError("Given argument are incorrect")
     operation_func = select_operation(entry_format, out_format, trans)
-    result = operation_func(x, y, z, args.r)
+    if out_format == "NEUp":
+        phi, lam, h = float(args.a), float(args.b), float(args.c)
+        arguments = [x, y, z, phi, lam, h]
+        result = operation_func(arguments)
+    else:
+        result = operation_func(x, y, z, args.r)
     return result
 
 
