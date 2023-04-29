@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Apr 16 14:00:09 2022
-
-@author: filom
-"""
-
 from math import sin, cos, sqrt, atan, degrees
 import math
 import numpy as np
@@ -82,14 +75,21 @@ class Transformator:
         Z = (N * (1 - self.ecc2) + h) * sin(phi)
         return X, Y, Z
 
-    def XYZtoNEUp(self, X, Y, Z, X0, Y0, Z0):
-        B, L, H = self.XYZtoBLH(X0, Y0, Z0, False)
-        R = np.array([[-np.sin(L), -np.sin(B) * np.cos(L), np.cos(B) * np.cos(L)],
-                      [np.cos(L), -np.sin(B) * np.sin(L), np.cos(B) * np.sin(L)],
-                      [0, np.cos(B), np.sin(B)]])
-        XYZ0 = np.array([X - X0, Y - Y0, Z - Z0])
-        XYZ = np.dot(R, XYZ0)
-        return XYZ[0], XYZ[1], XYZ[2]
+    def XYZtoNEUp(self, arguments):
+        X, Y, Z, phi, lam, h = arguments
+        Na = self.a/math.sqrt(1 - self.ecc2 *((math.sin(np.deg2rad(phi))**2)))
+        XYZs = np.array([X,Y,Z])
+
+        Xa = (Na+h)*math.cos(phi)*math.cos(lam)
+        Ya = (Na+h)*math.cos(phi)*math.sin(lam)
+        Za = (Na*(1-self.ecc2)+h)*math.sin(phi)
+        XYZa = np.array([Xa,Ya,Za])
+        dX = XYZs-XYZa
+        R = np.array([[-sin(phi)*cos(lam), -sin(lam), cos(phi)*cos(lam)],
+                            [-sin(phi)*sin(lam), cos(lam), cos(phi)*sin(lam)],
+                            [cos(phi)          ,    0    , sin(phi)         ]])
+        neu = R.dot(dX)
+        return neu
 
 
     def BLto2000(self, phi, lam, z, radians:bool):
