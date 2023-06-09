@@ -24,7 +24,7 @@ def set_parser():
     parser.add_argument("-x", help="first argument")
     parser.add_argument("-y", help="second argument")
     parser.add_argument("-z", help="third argument(optional in conversion from BL)")
-    parser.add_argument("-r", help="BL/BLH in radians")
+    parser.add_argument("-r", help="BL/BLH in radians", action='store_true')
     NEUpArguments = parser.add_argument_group("NEUp arguments")
     NEUpArguments.add_argument("-a", help="phi argument")
     NEUpArguments.add_argument("-b", help="lam argument")
